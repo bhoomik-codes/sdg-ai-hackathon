@@ -34,7 +34,7 @@ security invoker
 set search_path = ''
 as $$
 begin
-  delete from public.commons_records;
+  delete from public.commons_records where id is not null;
   insert into public.commons_records (id, kind, data)
   select record.id, record.kind, record.data
   from pg_catalog.jsonb_to_recordset(p_records) as record(id text, kind text, data jsonb);

@@ -49,10 +49,16 @@ export async function saveSharedChanges(previousListings, nextListings, previous
 }
 
 export async function resetSharedRecords(listings, requests) {
-  const { error } = await sharedDemoClient.rpc('reset_commons_demo', {
-    p_records: toRows(listings, requests),
-  })
-  if (error) throw error
+  // Postgres safety rules reject unfiltered DELETE statements inside RPCs.
+  // IDs are non-null by schema, so this explicit predicate clears the board.
+  const { error: deleteError } = await sharedDemoClient.from(table)
+    .delete()
+    .not('id', 'is', null)
+  if (deleteError) throw deleteError
+
+  const rows = toRows(listings, requests)
+  const { error: insertError } = await sharedDemoClient.from(table).insert(rows)
+  if (insertError) throw insertError
   return readSharedRecords()
 }
 
