@@ -341,7 +341,7 @@ h1, h2, h3, p { margin-top: 0; }
 .pitch-visual-tag { position: absolute; right: 15px; bottom: 13px; display: flex; align-items: center; gap: 5px; color: #7e8c77; font-size: 8px; }
 .pitch-visual-tag svg { color: var(--pitch-accent); }
 
-.mobile-menu, .mobile-scrim { display: none; }
+.mobile-menu, .mobile-scrim, .reset-demo-mobile { display: none; }
 @keyframes fade-in { from { opacity: 0; } to { opacity: 1; } }
 @keyframes dialog-in { from { opacity: 0; transform: translateY(8px) scale(.99); } to { opacity: 1; transform: translateY(0) scale(1); } }
 @keyframes toast-in { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
@@ -370,7 +370,7 @@ h1, h2, h3, p { margin-top: 0; }
   .pitch-visual { min-height: 340px; }
 }
 @media (max-width: 650px) {
-  .sidebar { width: 270px; position: fixed; top: 0; bottom: 0; left: 0; transform: translateX(-105%); transition: transform .22s ease; box-shadow: 15px 0 35px #18251d12; }
+  .sidebar { width: 270px; position: fixed; top: 0; bottom: 0; left: 0; overflow-y: auto; overscroll-behavior: contain; padding-bottom: calc(16px + env(safe-area-inset-bottom)); transform: translateX(-105%); transition: transform .22s ease; box-shadow: 15px 0 35px #18251d12; }
   .sidebar-open { transform: translateX(0); }
   .mobile-scrim { position: fixed; inset: 0; display: block; border: 0; background: #1d2a2180; z-index: 25; }
   .topbar { height: 64px; padding-inline: 10px; }
@@ -383,6 +383,7 @@ h1, h2, h3, p { margin-top: 0; }
   .pitch-button { min-height: 44px; padding: 0 9px; font-size: 11px; }
   .notification-button { width: 44px; height: 44px; }
   .reset-link { display: none; }
+  .reset-demo-mobile { display: flex; }
   .page-wrap { padding: 24px 14px calc(22px + env(safe-area-inset-bottom)); }
   .welcome-row h1 { font-size: 37px; letter-spacing: -2.2px; }
   .welcome-copy { max-width: 330px; font-size: 11px; line-height: 1.5; }
@@ -447,12 +448,17 @@ h1, h2, h3, p { margin-top: 0; }
   .dialog-actions .button { min-height: 46px; flex: 1; }
   .pitch-sheet { padding-inline: 18px; }
   .pitch-header { height: 62px; flex-basis: 62px; }
+  .pitch-header .icon-button { width: 44px; height: 44px; }
   .pitch-header-right { gap: 6px; font-size: 7px; }
   .pitch-content { padding: 28px 0 24px; grid-template-columns: 1fr; gap: 22px; align-content: start; }
   .pitch-copy h1 { margin: 15px 0 10px; font-size: clamp(38px, 11vw, 56px); letter-spacing: -2.5px; }
   .pitch-copy > p { margin-bottom: 14px; font-size: 12px; }
   .pitch-cue { margin-top: 13px; }
-  .pitch-navigation { margin-top: 13px; gap: 8px; }
+  .pitch-navigation { margin-top: 13px; display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 5px 8px; }
+  .pitch-navigation .pitch-back { grid-column: 1; grid-row: 1; }
+  .pitch-navigation .pitch-dots { grid-column: 1 / -1; grid-row: 2; justify-content: center; margin: 0; }
+  .pitch-navigation > .button { grid-column: 2; grid-row: 1; }
+  .pitch-dot { width: 34px; height: 40px; }
   .pitch-navigation .button { min-height: 44px; padding-inline: 10px; font-size: 11px; }
   .pitch-back { min-height: 44px; }
   .pitch-visual { min-height: 240px; border-radius: 14px; }

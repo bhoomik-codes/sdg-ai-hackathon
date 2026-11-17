@@ -21,6 +21,7 @@ import {
   IconMenu2,
   IconPackage,
   IconPlus,
+  IconRefresh,
   IconSearch,
   IconSettings,
   IconSparkles,
@@ -272,6 +273,7 @@ function App() {
             <span><strong>Small actions, shared impact</strong><small>{isDemo ? 'Sample exchange data' : 'Your community exchange'}</small></span>
             <IconArrowDownRight size={16} className="impact-arrow" />
           </div>
+          {isDemo && <button className="nav-item reset-demo-mobile" onClick={resetDemo}><IconRefresh size={19} stroke={1.7} /><span>Reset demo data</span></button>}
           <button className="nav-item"><IconSettings size={19} stroke={1.7} /><span>Settings</span></button>
           <button className="profile-row" onClick={() => setModal({ type: 'register' })}>
             <span className="profile-avatar">AM</span><span className="profile-copy"><strong>Alex Morgan</strong><small>Campus coordinator</small></span><IconChevronDown size={15} />
