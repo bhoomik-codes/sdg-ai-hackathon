@@ -33,16 +33,18 @@ const DEMO_MODE = import.meta.env.MODE === 'demo'
 
 const navItems = [
   { key: 'overview', label: 'Overview', icon: IconBuildingCommunity },
-  { key: 'matches', label: 'Match board', icon: IconArrowsExchange, count: 3 },
+  { key: 'matches', label: 'Match board', icon: IconArrowsExchange },
   { key: 'listings', label: 'Surplus listings', icon: IconPackage },
   { key: 'requests', label: 'Community needs', icon: IconHeartHandshake },
+  { key: 'offers', label: 'Incoming offers', icon: IconCircleCheck },
 ]
 
 const pitchSlides = [
-  { eyebrow: 'THE GAP', title: 'Good resources are going unused.', body: 'At the same time, nearby community groups are searching for the very things campuses already have.', stat: 'One campus. Two separate conversations.', color: 'green', cue: 'Open with the everyday mismatch: a storeroom full of usable books, while a nearby learning centre is asking for them.' },
-  { eyebrow: 'THE IDEA', title: 'Make the right connection visible.', body: 'Commons turns campus surplus and local requests into one shared, searchable exchange.', stat: 'List → match → hand off', color: 'peach', cue: 'Introduce Commons as a coordination layer. No complicated logistics or charity marketplace; just make a useful connection easier.' },
-  { eyebrow: 'THE FLOW', title: 'A match you can explain.', body: 'Category, quantity, condition and distance shape each suggestion. A person reviews the fit, then offers the item.', stat: DEMO_MODE ? '24 books · 18 needed · 2.4 km' : 'Category + quantity + condition + distance', color: 'blue', cue: DEMO_MODE ? 'Run the live prototype: show the textbook match, explain why it fits, offer the books, and point out the status update.' : 'Demonstrate how matching rules explain their suggestions and keep people in control.' },
-  { eyebrow: 'THE OUTCOME', title: 'Less waste. More local value.', body: 'Every completed handoff keeps useful resources in circulation and helps campus communities act on local needs.', stat: 'Start with one campus cluster.', color: 'sage', cue: 'Close with a practical pilot: one campus, a few partner organisations, a coordinator, and simple handoff tracking.' },
+  { eyebrow: 'MEET THE TEAM', title: 'We are Bhoomik and Chitransh.', body: 'Bhoomik Sevta and Chitransh Dhakar · B.Tech, 5th semester · presenting Commons.', stat: 'Useful things, in the right place.', color: 'green', cue: 'Member 1: Hello, judges and everyone present. I’m Bhoomik Sevta. Member 2: And I’m Chitransh Dhakar. We are B.Tech fifth-semester students, and today we present Commons.' },
+  { eyebrow: 'THE GAP', title: 'Surplus and need rarely meet.', body: 'Books, stationery, clothes and gadgets may sit unused or go to scrap while nearby community groups are searching for useful supplies.', stat: 'One campus. Two separate conversations.', color: 'peach', cue: 'Member 1: Chitransh, have you had things you no longer need taking up space? Member 2: Yes, sometimes useful things get discarded. Member 1: Nearby NGOs may be able to use them. Member 2: Commons helps fill that gap.' },
+  { eyebrow: 'THE IDEA', title: 'A match you can explain.', body: 'Commons brings campus listings and community requests together, then ranks possible fits by category, quantity, condition and known distance.', stat: 'List → match → offer → hand off', color: 'blue', cue: 'Member 1: The donor lists available surplus. Member 2: A simple algorithm ranks possible matches and explains the fit. People decide whether to make or accept the offer.' },
+  { eyebrow: 'THE EXAMPLE', title: '24 books. 12 needed. One local match.', body: 'Northbridge University has biology textbooks. Westview University requests them. The demo shows the offer moving between campus accounts.', stat: DEMO_MODE ? '24 books · 12 needed · 3.6 km' : 'Category + quantity + condition + distance', color: 'sage', cue: DEMO_MODE ? 'Member 1: Point out the textbook fit and offer it. Member 2: Switch to Westview University and accept the incoming offer.' : 'Member 1: Explain the sample match. Member 2: Show how the recipient accepts while people stay in control.' },
+  { eyebrow: 'PILOT & SUSTAINABILITY', title: 'Start small. Learn before scaling.', body: 'Begin with our campus and three local partners. Test a small brokerage or affiliate fee on suitable paid or non-NGO transactions, with optional, clearly labelled, non-intrusive promotions.', stat: 'Review the pilot after year one.', color: 'green', cue: 'Member 1: We will onboard partners, coordinate and review listings, matches and handoffs after the first financial year. Member 2: We will validate the revenue model with partners. Both: Let’s help good things find their next home. Thank you.' },
 ]
 
 const categoryIcon = { Books: IconBook2, Devices: IconDeviceLaptop, Food: IconCoffee, Stationery: IconPackage, Furniture: IconPackage }
@@ -59,13 +61,13 @@ function readStored(key, fallback) {
 function getInitialData() {
   if (!DEMO_MODE) return { listings: [], requests: [] }
   return {
-    listings: readStored('commons-demo-listings', seedListings),
-    requests: readStored('commons-demo-requests', seedRequests),
+    listings: readStored('commons-demo-listings-v2', seedListings),
+    requests: readStored('commons-demo-requests-v2', seedRequests),
   }
 }
 
 function matchScore(listing, request) {
-  if (listing.status !== 'Available' || request.status === 'Fulfilled') return 0
+  if (listing.status !== 'Available' || request.status !== 'Open') return 0
   if (listing.category.toLowerCase() !== request.category.toLowerCase()) return 0
   let score = 55
   if (listing.quantity >= request.quantity) score += 20
@@ -93,6 +95,7 @@ function App() {
   const [listings, setListings] = useState(initial.listings)
   const [requests, setRequests] = useState(initial.requests)
   const [page, setPage] = useState('overview')
+  const [activeCampus, setActiveCampus] = useState('Northbridge University')
   const [role, setRole] = useState('Campus partner')
   const [roleMenu, setRoleMenu] = useState(false)
   const [modal, setModal] = useState(null)
@@ -112,7 +115,7 @@ function App() {
       setInstallPrompt(event)
     }
     window.addEventListener('beforeinstallprompt', captureInstall)
-    if ('serviceWorker' in navigator && import.meta.env.PROD) navigator.serviceWorker.register('/sw.js').catch(() => {})
+    if ('serviceWorker' in navigator && import.meta.env.PROD) navigator.serviceWorker.register(`${import.meta.env.BASE_URL}sw.js`).catch(() => {})
     return () => window.removeEventListener('beforeinstallprompt', captureInstall)
   }, [])
 
@@ -130,7 +133,9 @@ function App() {
 
   const isDemo = DEMO_MODE
   const activeMatches = useMemo(() => listings.flatMap((listing) => requests.map((request) => ({ listing, request, score: matchScore(listing, request) })).filter((match) => match.score > 0)).sort((a, b) => b.score - a.score), [listings, requests])
-  const offeredCount = listings.filter((item) => item.status === 'Requested' || item.status === 'Fulfilled').length
+  const incomingOffers = requests.filter((request) => request.recipientCampus === activeCampus && ['Matched', 'Accepted'].includes(request.status))
+  const pendingOfferCount = incomingOffers.filter((request) => request.status === 'Matched').length
+  const offeredCount = listings.filter((item) => item.status === 'Requested' || item.status === 'Accepted').length
   const fulfilledCount = listings.filter((item) => item.status === 'Fulfilled').length
   const availableCount = listings.filter((item) => item.status === 'Available').length
   const matchedPair = activeMatches[0]
@@ -144,13 +149,15 @@ function App() {
     setListings(nextListings)
     setRequests(nextRequests)
     if (isDemo) {
-      localStorage.setItem('commons-demo-listings', JSON.stringify(nextListings))
-      localStorage.setItem('commons-demo-requests', JSON.stringify(nextRequests))
+      localStorage.setItem('commons-demo-listings-v2', JSON.stringify(nextListings))
+      localStorage.setItem('commons-demo-requests-v2', JSON.stringify(nextRequests))
     }
   }
 
   function resetDemo() {
     saveLists(seedListings, seedRequests)
+    setActiveCampus('Northbridge University')
+    setRole('Campus partner')
     setPage('overview')
     setSearch('')
     setFilter('All')
@@ -158,17 +165,26 @@ function App() {
   }
 
   function offerMatch(listingId, requestId) {
-    const nextListings = listings.map((item) => item.id === listingId ? { ...item, status: 'Requested' } : item)
-    const nextRequests = requests.map((item) => item.id === requestId ? { ...item, status: 'Matched' } : item)
+    const request = requests.find((item) => item.id === requestId)
+    const nextListings = listings.map((item) => item.id === listingId ? { ...item, status: 'Requested', offeredRequestId: requestId, recipientCampus: request?.recipientCampus ?? null } : item)
+    const nextRequests = requests.map((item) => item.id === requestId ? { ...item, status: 'Matched', offeredListingId: listingId } : item)
     saveLists(nextListings, nextRequests)
     setModal(null)
     notify('Offer sent — the match is now being coordinated')
   }
 
+  function acceptOffer(listingId, requestId) {
+    const nextListings = listings.map((item) => item.id === listingId ? { ...item, status: 'Accepted' } : item)
+    const nextRequests = requests.map((item) => item.id === requestId ? { ...item, status: 'Accepted' } : item)
+    saveLists(nextListings, nextRequests)
+    notify('Offer accepted — the two campus coordinators can arrange the handoff')
+  }
+
   function fulfillListing(listingId) {
     const listing = listings.find((item) => item.id === listingId)
+    if (listing?.status !== 'Accepted' || listing.campus !== activeCampus) return
     const nextListings = listings.map((item) => item.id === listingId ? { ...item, status: 'Fulfilled' } : item)
-    const nextRequests = requests.map((item) => item.category === listing?.category && item.status === 'Matched' ? { ...item, status: 'Fulfilled' } : item)
+    const nextRequests = requests.map((item) => item.id === listing?.offeredRequestId ? { ...item, status: 'Fulfilled' } : item)
     saveLists(nextListings, nextRequests)
     notify('Handoff marked fulfilled — thanks for keeping it in use')
   }
@@ -176,12 +192,12 @@ function App() {
   function submitForm(event) {
     event.preventDefault()
     if (modal === 'listing') {
-      const listing = { id: `l-${Date.now()}`, name: form.name.trim(), category: form.category, quantity: Number(form.quantity), condition: form.condition, location: form.location.trim() || 'Campus pickup · confirm in chat', campus: 'Northbridge University', status: 'Available', note: form.note.trim() || 'Ready for a new home', icon: 'package' }
+      const listing = { id: `l-${Date.now()}`, name: form.name.trim(), category: form.category, quantity: Number(form.quantity), condition: form.condition, location: form.location.trim() || 'Campus pickup · confirm in chat', campus: activeCampus, status: 'Available', note: form.note.trim() || 'Ready for a new home', icon: 'package' }
       saveLists([listing, ...listings], requests)
       setPage('listings')
       notify('Surplus listing added — checking for a community match')
     } else if (modal === 'request') {
-      const request = { id: `r-${Date.now()}`, organization: form.organization.trim(), item: form.name.trim(), category: form.category, quantity: Number(form.quantity), location: form.location.trim() || 'Nearby · distance to confirm', distanceKm: null, urgency: form.urgency, status: 'Open', initials: form.organization.trim().split(' ').slice(0, 2).map((word) => word[0]).join('').toUpperCase() || 'NG', color: 'sage', note: form.note.trim() || 'Request added by a community partner' }
+      const request = { id: `r-${Date.now()}`, organization: form.organization.trim(), item: form.name.trim(), category: form.category, quantity: Number(form.quantity), location: form.location.trim() || 'Nearby · distance to confirm', distanceKm: null, urgency: form.urgency, status: 'Open', initials: form.organization.trim().split(' ').slice(0, 2).map((word) => word[0]).join('').toUpperCase() || 'NG', color: 'sage', note: form.note.trim() || 'Request added by a community partner', recipientCampus: activeCampus }
       saveLists(listings, [request, ...requests])
       setPage('requests')
       notify('Community need added — matching against available resources')
@@ -192,6 +208,16 @@ function App() {
 
   function showOffer(listing, request) {
     setModal({ type: 'offer', listing, request })
+  }
+
+  function switchDemoAccount(campus) {
+    setActiveCampus(campus)
+    setRole(campus === 'Westview University' ? 'Recipient campus' : 'Campus partner')
+    setRoleMenu(false)
+    const hasIncomingOffer = requests.some((request) => request.recipientCampus === campus && ['Matched', 'Accepted'].includes(request.status))
+    setPage(campus === 'Westview University' ? (hasIncomingOffer ? 'offers' : 'requests') : 'overview')
+    setMobileNav(false)
+    notify(`Demo login: ${campus} · no password required`)
   }
 
   const filteredListings = listings.filter((item) => {
@@ -215,20 +241,29 @@ function App() {
 
         <div className="workspace-label">WORKSPACE</div>
         <button className="workspace-switch" onClick={() => setRoleMenu((current) => !current)} aria-expanded={roleMenu}>
-          <span className="workspace-avatar">N</span>
-          <span className="workspace-copy"><strong>Northbridge University</strong><small>{role}</small></span>
+          <span className={`workspace-avatar ${activeCampus === 'Westview University' ? 'westview-avatar' : ''}`}>{activeCampus === 'Westview University' ? 'W' : 'N'}</span>
+          <span className="workspace-copy"><strong>{activeCampus}</strong><small>{role}</small></span>
           <IconChevronDown size={16} />
         </button>
         {roleMenu && <div className="role-menu">
-          {['Campus partner', 'Student donor', 'Community coordinator'].map((option) => <button key={option} onClick={() => { setRole(option); setRoleMenu(false); notify(`Viewing as ${option.toLowerCase()}`) }}><IconUsers size={16} />{option}{role === option && <IconCheck size={16} />}</button>)}
+          {isDemo && <>
+            <div className="role-menu-heading">DEMO LOGIN · NO PASSWORD</div>
+            <button className="account-option" onClick={() => switchDemoAccount('Northbridge University')}><span className="workspace-avatar">N</span><span className="account-option-copy"><strong>Northbridge University</strong><small>Campus donor</small></span>{activeCampus === 'Northbridge University' && <IconCheck size={16} />}</button>
+            <button className="account-option" onClick={() => switchDemoAccount('Westview University')}><span className="workspace-avatar westview-avatar">W</span><span className="account-option-copy"><strong>Westview University</strong><small>Recipient campus</small></span>{activeCampus === 'Westview University' && <IconCheck size={16} />}</button>
+            <div className="role-menu-divider" />
+          </>}
+          {['Student donor', 'Community coordinator'].map((option) => <button key={option} onClick={() => { setRole(option); setRoleMenu(false); notify(`Viewing as ${option.toLowerCase()}`) }}><IconUsers size={16} />{option}{role === option && <IconCheck size={16} />}</button>)}
           <div className="role-menu-note">NGO identity review is simulated in this prototype.</div>
         </div>}
 
         <div className="workspace-label nav-label">YOUR SPACE</div>
         <nav className="primary-nav" aria-label="Main navigation">
-          {navItems.map(({ key, label, icon: Icon, count }) => <button key={key} className={`nav-item ${page === key ? 'nav-active' : ''}`} onClick={() => { setPage(key); setMobileNav(false) }}>
-            <Icon size={19} stroke={1.7} /><span>{label}</span>{count && page !== key && <span className="nav-count">{Math.min(count, activeMatches.length)}</span>}
-          </button>)}
+          {navItems.map(({ key, label, icon: Icon }) => {
+            const count = key === 'matches' ? activeMatches.length : key === 'offers' ? pendingOfferCount : 0
+            return <button key={key} className={`nav-item ${page === key ? 'nav-active' : ''}`} onClick={() => { setPage(key); setMobileNav(false) }}>
+              <Icon size={19} stroke={1.7} /><span>{label}</span>{count > 0 && page !== key && <span className="nav-count">{count}</span>}
+            </button>
+          })}
         </nav>
 
         <div className="sidebar-bottom">
@@ -250,7 +285,7 @@ function App() {
         <header className="topbar">
           <div className="topbar-left">
             <button className="icon-button mobile-menu" aria-label="Open navigation" onClick={() => setMobileNav(true)}><IconMenu2 size={21} /></button>
-            <div className="breadcrumb"><span>Northbridge University</span><IconChevronRight size={14} /><strong>{title}</strong></div>
+            <div className="breadcrumb"><span>{activeCampus}</span><IconChevronRight size={14} /><strong>{title}</strong></div>
           </div>
           <div className="topbar-actions">
             <div className="demo-indicator"><span className="status-dot" />{isDemo ? 'Demo workspace' : 'Production build'}</div>
@@ -288,7 +323,7 @@ function App() {
               <button className="text-link" onClick={() => setPage('matches')}>View match board <IconArrowRight size={17} /></button>
             </section>
 
-            {matchedPair ? <FeaturedMatch match={matchedPair} onOffer={showOffer} /> : <div className="empty-panel"><IconArrowsExchange size={25} /><strong>No suggestions yet</strong><span>Add a listing or a community need to start a match.</span></div>}
+            {matchedPair ? <FeaturedMatch match={matchedPair} onOffer={showOffer} activeCampus={activeCampus} /> : <div className="empty-panel"><IconArrowsExchange size={25} /><strong>No suggestions yet</strong><span>Add a listing or a community need to start a match.</span></div>}
 
             <section className="overview-lower">
               <div className="panel activity-panel">
@@ -310,24 +345,33 @@ function App() {
           </>}
 
           {page === 'matches' && <>
-            <PageIntro eyebrow="BETTER TOGETHER" title="Match board" text="Suggestions are ranked by category, quantity, condition and pickup proximity. A person always makes the final call." action={<button className="button button-primary" onClick={() => setModal('listing')}><IconPlus size={18} />List surplus</button>} />
+            <PageIntro eyebrow="BETTER TOGETHER" title="Match board" text="Suggestions are ranked by category, quantity, condition and pickup proximity. A person always makes the final call." action={<div className="page-actions"><button className="button button-secondary" onClick={() => setModal('request')}><IconHeartHandshake size={18} />Add a community need</button><button className="button button-primary" onClick={() => setModal('listing')}><IconPlus size={18} />List surplus</button></div>} />
             <div className="match-explainer"><IconSparkles size={18} /><span><strong>How matching works</strong> Category fit + enough quantity + usable condition + nearby pickup.</span><span className="rules-tag">RULE-BASED · EXPLAINABLE</span></div>
-            <div className="match-stack">{activeMatches.map((match) => <FeaturedMatch key={`${match.listing.id}-${match.request.id}`} match={match} onOffer={showOffer} compact />)}</div>
+            <div className="match-stack">{activeMatches.map((match) => <FeaturedMatch key={`${match.listing.id}-${match.request.id}`} match={match} onOffer={showOffer} activeCampus={activeCampus} compact />)}</div>
             {activeMatches.length === 0 && <div className="empty-panel"><IconArrowsExchange size={25} /><strong>No current matches</strong><span>Try a broader category or add an item that meets a community need.</span></div>}
           </>}
 
           {page === 'listings' && <>
-            <PageIntro eyebrow="GIVE IT ANOTHER LIFE" title="Surplus listings" text="Useful items on campus, ready for a new home." action={<button className="button button-primary" onClick={() => setModal('listing')}><IconPlus size={18} />List surplus</button>} />
-            <ListControls search={search} setSearch={setSearch} filter={filter} setFilter={setFilter} options={['All', 'Available', 'Requested', 'Fulfilled']} />
-            <div className="listing-grid">{filteredListings.map((listing) => <ListingCard key={listing.id} listing={listing} requests={requests} onFulfill={fulfillListing} />)}</div>
+            <PageIntro eyebrow="GIVE IT ANOTHER LIFE" title="Surplus listings" text="Useful items on campus, ready for a new home." action={<div className="page-actions"><button className="button button-secondary" onClick={() => setModal('request')}><IconHeartHandshake size={18} />Add a community need</button><button className="button button-primary" onClick={() => setModal('listing')}><IconPlus size={18} />List surplus</button></div>} />
+            <ListControls search={search} setSearch={setSearch} filter={filter} setFilter={setFilter} options={['All', 'Available', 'Requested', 'Accepted', 'Fulfilled']} />
+            <div className="listing-grid">{filteredListings.map((listing) => <ListingCard key={listing.id} listing={listing} requests={requests} activeCampus={activeCampus} onFulfill={fulfillListing} />)}</div>
             {filteredListings.length === 0 && <div className="empty-panel"><IconPackage size={25} /><strong>No listings to show</strong><span>Try another filter or add a surplus item.</span><button className="button button-primary" onClick={() => setModal('listing')}><IconPlus size={17} />Add first listing</button></div>}
           </>}
 
           {page === 'requests' && <>
             <PageIntro eyebrow="NEARBY, AND IN NEED" title="Community needs" text="Local organisations share what would help. Your campus can respond when it has a good fit." action={<button className="button button-primary" onClick={() => setModal('request')}><IconPlus size={18} />Add a need</button>} />
-            <ListControls search={search} setSearch={setSearch} filter={filter} setFilter={setFilter} options={['All', 'Open', 'Matched', 'Fulfilled']} />
-            <div className="request-grid">{filteredRequests.map((request) => <RequestCard key={request.id} request={request} listings={listings} onOffer={showOffer} />)}</div>
+            <ListControls search={search} setSearch={setSearch} filter={filter} setFilter={setFilter} options={['All', 'Open', 'Matched', 'Accepted', 'Fulfilled']} />
+            <div className="request-grid">{filteredRequests.map((request) => <RequestCard key={request.id} request={request} listings={listings} activeCampus={activeCampus} onOffer={showOffer} />)}</div>
             {filteredRequests.length === 0 && <div className="empty-panel"><IconHeartHandshake size={25} /><strong>No community needs yet</strong><span>Add a request to let nearby campuses know what would help.</span><button className="button button-primary" onClick={() => setModal('request')}><IconPlus size={17} />Add a community need</button></div>}
+          </>}
+
+          {page === 'offers' && <>
+            <PageIntro eyebrow="RECIPIENT CAMPUS" title="Incoming offers" text={`Offers addressed to ${activeCampus}. Accept a fit, then coordinate the handoff with the donor campus.`} action={<button className="button button-secondary" onClick={() => setPage('requests')}>View campus requests <IconArrowRight size={16} /></button>} />
+            <div className="incoming-offer-grid">{incomingOffers.map((request) => {
+              const listing = listings.find((item) => item.id === request.offeredListingId)
+              return listing ? <IncomingOfferCard key={request.id} request={request} listing={listing} onAccept={() => acceptOffer(listing.id, request.id)} /> : null
+            })}</div>
+            {incomingOffers.length === 0 && <div className="empty-panel"><IconHeartHandshake size={25} /><strong>No offers yet</strong><span>Offers for {activeCampus} will appear here. The demo donor can send one from Match board.</span><button className="button button-primary" onClick={() => setPage('requests')}>View this campus’s needs <IconArrowRight size={16} /></button></div>}
           </>}
 
           <footer className="page-footer"><span>commons. <i>Make useful things useful again.</i></span><span>{isDemo ? 'Sample data · local browser storage' : 'Clean build · connect an approved backend to go live'}</span></footer>
@@ -371,17 +415,18 @@ function ListControls({ search, setSearch, filter, setFilter, options }) {
   return <div className="list-controls"><label className="search-field"><IconSearch size={18} /><input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Search items, categories or groups" aria-label="Search listings" /><kbd>⌘ K</kbd></label><label className="filter-select"><IconFilter size={17} /><select value={filter} onChange={(event) => setFilter(event.target.value)} aria-label="Filter by status">{options.map((item) => <option key={item}>{item}</option>)}</select><IconChevronDown size={15} /></label></div>
 }
 
-function FeaturedMatch({ match, onOffer, compact = false }) {
+function FeaturedMatch({ match, onOffer, activeCampus, compact = false }) {
   const { listing, request, score } = match
   const CategoryIcon = categoryIcon[listing.category] ?? IconPackage
-  const busy = listing.status !== 'Available' || request.status !== 'Open'
+  const ownsListing = listing.campus === activeCampus
+  const busy = !ownsListing || listing.status !== 'Available' || request.status !== 'Open'
   return <article className={`featured-match ${compact ? 'featured-compact' : ''}`}>
     <div className="match-topline"><span className="fit-badge"><IconSparkles size={15} />{Math.min(score || 95, 99)}% fit</span><span className="match-reason">{matchReason(listing, request)}</span><button className="match-more" aria-label={`More about ${listing.name}`}><IconChevronDown size={18} /></button></div>
     <div className="match-main">
       <div className="match-item-side"><div className="match-item-icon"><CategoryIcon size={23} stroke={1.6} /></div><div><span className="item-type">CAMPUS HAS</span><h3>{listing.name}</h3><p>{listing.quantity} available <span>·</span> {listing.condition}</p><div className="location-line"><IconMapPin size={15} />{listing.location}</div></div></div>
       <div className="match-connector"><span><IconArrowsExchange size={20} /></span><i /><small>GOOD FIT</small></div>
       <div className="match-need-side"><span className={`org-avatar ${request.color}`}>{request.initials}</span><div><span className="item-type">COMMUNITY NEEDS</span><h3>{request.item}</h3><p><strong>{request.organization}</strong><span> · </span>{request.quantity} needed</p><div className="location-line"><IconMapPin size={15} />{request.location}</div></div></div>
-      <div className="match-cta"><button className={`button ${busy ? 'button-muted' : 'button-primary'}`} disabled={busy} onClick={() => onOffer(listing, request)}>{busy ? (listing.status === 'Fulfilled' ? 'Fulfilled' : 'Offer in progress') : 'Offer this item'}{!busy && <IconArrowRight size={17} />}</button><span>{busy ? 'Status updates as the handoff moves forward' : 'You’ll confirm pickup details next'}</span></div>
+      <div className="match-cta"><button className={`button ${busy ? 'button-muted' : 'button-primary'}`} disabled={busy} onClick={() => onOffer(listing, request)}>{!ownsListing ? 'From another campus' : busy ? (listing.status === 'Fulfilled' ? 'Fulfilled' : listing.status === 'Accepted' ? 'Accepted' : 'Offer in progress') : 'Offer this item'}{!busy && <IconArrowRight size={17} />}</button><span>{!ownsListing ? `${listing.campus} owns this listing` : busy ? 'Status updates as the handoff moves forward' : 'You’ll confirm pickup details next'}</span></div>
     </div>
   </article>
 }
@@ -390,18 +435,27 @@ function NeedRow({ request }) {
   return <div className="need-row"><span className={`org-avatar ${request.color}`}>{request.initials}</span><div className="need-row-content"><strong>{request.organization}</strong><span>{request.item}</span></div><span className={`urgency urgency-${request.urgency.toLowerCase()}`}>{request.urgency}</span><span className={`status status-${request.status.toLowerCase()}`}>{request.status}</span></div>
 }
 
-function ListingCard({ listing, requests, onFulfill }) {
+function ListingCard({ listing, requests, activeCampus, onFulfill }) {
   const CategoryIcon = categoryIcon[listing.category] ?? IconPackage
-  const request = requests.find((item) => item.category === listing.category && item.status !== 'Fulfilled')
-  return <article className="listing-card"><div className="listing-card-head"><span className="listing-icon"><CategoryIcon size={21} stroke={1.6} /></span><span className={`status status-${listing.status.toLowerCase()}`}>{listing.status}</span></div><span className="item-type">{listing.category.toUpperCase()}</span><h3>{listing.name}</h3><p className="listing-note">{listing.note}</p><div className="listing-meta"><span><IconPackage size={15} />{listing.quantity} units</span><span>{listing.condition}</span></div><div className="listing-location"><IconMapPin size={15} />{listing.location}</div>{request && <div className="listing-fit"><IconSparkles size={15} /><span>Potential fit for <strong>{request.organization}</strong></span></div>}{listing.status === 'Requested' && <button className="button button-primary button-full" onClick={() => onFulfill(listing.id)}><IconCheck size={17} />Mark handoff fulfilled</button>}{listing.status === 'Fulfilled' && <div className="fulfilled-note"><IconCircleCheck size={17} />A useful thing, still in use.</div>}</article>
+  const request = requests.find((item) => item.id === listing.offeredRequestId) ?? requests.find((item) => item.category === listing.category && item.status === 'Open')
+  return <article className="listing-card"><div className="listing-card-head"><span className="listing-icon"><CategoryIcon size={21} stroke={1.6} /></span><span className={`status status-${listing.status.toLowerCase()}`}>{listing.status}</span></div><span className="item-type">{listing.category.toUpperCase()} · {listing.campus}</span><h3>{listing.name}</h3><p className="listing-note">{listing.note}</p><div className="listing-meta"><span><IconPackage size={15} />{listing.quantity} units</span><span>{listing.condition}</span></div><div className="listing-location"><IconMapPin size={15} />{listing.location}</div>{request && <div className="listing-fit"><IconSparkles size={15} /><span>{listing.status === 'Accepted' || listing.status === 'Fulfilled' ? 'Matched with' : 'Potential fit for'} <strong>{request.organization}</strong></span></div>}{listing.status === 'Requested' && <div className="awaiting-note"><IconClock size={16} />Awaiting recipient response</div>}{listing.status === 'Accepted' && (listing.campus === activeCampus ? <button className="button button-primary button-full" onClick={() => onFulfill(listing.id)}><IconCheck size={17} />Mark handoff fulfilled</button> : <div className="awaiting-note"><IconClock size={16} />Donor campus will confirm handoff</div>)}{listing.status === 'Fulfilled' && <div className="fulfilled-note"><IconCircleCheck size={17} />A useful thing, still in use.</div>}</article>
 }
 
-function RequestCard({ request, listings, onOffer }) {
+function RequestCard({ request, listings, activeCampus, onOffer }) {
   const CategoryIcon = categoryIcon[request.category] ?? IconPackage
   const candidates = listings.filter((item) => matchScore(item, request) > 0)
   const best = candidates[0]
-  const offered = request.status === 'Matched' ? listings.find((item) => item.category === request.category && item.status === 'Requested') : null
-  return <article className="request-card"><div className="request-card-head"><span className={`org-avatar org-avatar-large ${request.color}`}>{request.initials}</span><span className={`status status-${request.status.toLowerCase()}`}>{request.status}</span></div><h3>{request.organization}</h3><span className="request-item"><CategoryIcon size={17} />{request.item}</span><p>{request.note}</p><div className="request-meta"><span><IconPackage size={15} />{request.quantity} wanted</span><span className={`urgency urgency-${request.urgency.toLowerCase()}`}>{request.urgency} priority</span></div><div className="listing-location"><IconMapPin size={15} />{request.location}</div>{best ? <div className="request-fit"><div><IconSparkles size={16} /><span><strong>{best.name}</strong><small>{matchReason(best, request)}</small></span></div><button disabled={request.status !== 'Open'} aria-label={`Offer ${best.name}`} onClick={() => onOffer(best, request)}><IconArrowRight size={18} /></button></div> : offered ? <div className="request-fit"><div><IconCircleCheck size={16} /><span><strong>{offered.name}</strong><small>Offer received · handoff being coordinated</small></span></div></div> : <div className="request-wait"><IconClock size={16} />Waiting for a suitable listing</div>}</article>
+  const offered = ['Matched', 'Accepted', 'Fulfilled'].includes(request.status) ? listings.find((item) => item.id === request.offeredListingId) : null
+  const canOffer = best && best.campus === activeCampus
+  const offerStatus = request.status === 'Matched' ? 'Offer received · awaiting your response' : request.status === 'Accepted' ? 'Offer accepted · coordinate the handoff' : 'Handoff completed'
+  return <article className="request-card"><div className="request-card-head"><span className={`org-avatar org-avatar-large ${request.color}`}>{request.initials}</span><span className={`status status-${request.status.toLowerCase()}`}>{request.status}</span></div><h3>{request.organization}</h3><span className="request-item"><CategoryIcon size={17} />{request.item}</span><p>{request.note}</p><div className="request-meta"><span><IconPackage size={15} />{request.quantity} wanted</span><span className={`urgency urgency-${request.urgency.toLowerCase()}`}>{request.urgency} priority</span></div><div className="listing-location"><IconMapPin size={15} />{request.location}</div>{best ? <div className="request-fit"><div><IconSparkles size={16} /><span><strong>{best.name}</strong><small>{matchReason(best, request)}{!canOffer ? ` · listed by ${best.campus}` : ''}</small></span></div>{canOffer && <button disabled={request.status !== 'Open'} aria-label={`Offer ${best.name}`} onClick={() => onOffer(best, request)}><IconArrowRight size={18} /></button>}</div> : offered ? <div className="request-fit"><div><IconCircleCheck size={16} /><span><strong>{offered.name}</strong><small>{offerStatus}</small></span></div></div> : <div className="request-wait"><IconClock size={16} />Waiting for a suitable listing</div>}</article>
+}
+
+function IncomingOfferCard({ request, listing, onAccept }) {
+  const CategoryIcon = categoryIcon[listing.category] ?? IconPackage
+  const isPending = request.status === 'Matched'
+  const isFulfilled = request.status === 'Fulfilled'
+  return <article className="incoming-offer-card"><div className="incoming-offer-top"><span className="listing-icon"><CategoryIcon size={21} stroke={1.6} /></span><span className={`status status-${request.status.toLowerCase()}`}>{request.status === 'Matched' ? 'Needs your response' : request.status}</span></div><span className="item-type">OFFER FROM {listing.campus.toUpperCase()}</span><h3>{listing.name}</h3><p>{listing.note}</p><div className="incoming-offer-details"><span><IconPackage size={16} />{listing.quantity} available · {listing.condition}</span><span><IconMapPin size={16} />{listing.location}</span></div><div className="incoming-request-box"><span className="section-kicker">YOUR REQUEST</span><strong>{request.item}</strong><small>{request.quantity} requested · {request.location}</small></div>{isPending ? <button className="button button-primary button-full" onClick={onAccept}><IconCheck size={17} />Accept this offer</button> : <div className={`offer-accepted-note ${isFulfilled ? 'offer-fulfilled-note' : ''}`}><IconCircleCheck size={17} />{isFulfilled ? 'Handoff completed' : 'Offer accepted · coordinate pickup with the donor'}</div>}</article>
 }
 
 function EmptyLine({ text }) { return <div className="empty-line">{text}</div> }
@@ -421,7 +475,7 @@ function OfferModal({ modal, onClose, onConfirm }) {
 function PitchMode({ index, onChange, onClose, onOpenMatch }) {
   const slide = pitchSlides[index]
   const last = index === pitchSlides.length - 1
-  return <div className="pitch-backdrop"><div className={`pitch-sheet pitch-${slide.color}`} role="dialog" aria-modal="true" aria-label="Commons pitch mode"><header className="pitch-header"><a className="brand pitch-brand" href="#pitch" onClick={(event) => event.preventDefault()}><span className="brand-mark"><IconArrowsExchange size={21} /></span><span className="brand-word">commons<span className="brand-period">.</span><small>resource exchange</small></span></a><div className="pitch-header-right"><span>JUDGE SHOWCASE</span><button className="icon-button" aria-label="Exit pitch mode" onClick={onClose}><IconX size={21} /></button></div></header><div className="pitch-content"><div className="pitch-copy"><span className="pitch-eyebrow"><i />{slide.eyebrow} <span>·</span> 0{index + 1}</span><h1>{slide.title}</h1><p>{slide.body}</p><div className="pitch-stat"><span className="pitch-stat-icon"><IconLeaf size={20} /></span>{slide.stat}</div><div className="pitch-cue"><span>YOUR TALK TRACK</span><p>{slide.cue}</p></div><div className="pitch-navigation"><button className="pitch-back" onClick={() => index === 0 ? onClose() : onChange(index - 1)}>{index === 0 ? 'Exit pitch' : <><IconChevronLeft size={17} />Back</>}</button><div className="pitch-dots">{pitchSlides.map((item, dot) => <button key={item.eyebrow} className={dot === index ? 'pitch-dot pitch-dot-active' : 'pitch-dot'} aria-label={`Go to slide ${dot + 1}`} onClick={() => onChange(dot)} />)}</div>{last ? <button className="button button-primary" onClick={onOpenMatch}>Show live match <IconArrowRight size={17} /></button> : <button className="button button-primary" onClick={() => onChange(index + 1)}>Continue <IconArrowRight size={17} /></button>}</div></div><div className="pitch-visual"><div className="pitch-orbit orbit-one" /><div className="pitch-orbit orbit-two" /><div className="pitch-visual-center"><span><IconArrowsExchange size={39} stroke={1.5} /></span><small>CAMPUS SURPLUS</small><i /><small>COMMUNITY NEED</small></div><div className="pitch-floating pitch-floating-top"><IconBook2 size={18} />{DEMO_MODE ? '24 textbooks' : 'Useful surplus'}<span>{DEMO_MODE ? 'READY TO SHARE' : 'READY TO LIST'}</span></div><div className="pitch-floating pitch-floating-bottom"><span className="org-avatar sage">{DEMO_MODE ? 'BL' : 'NG'}</span><div><strong>{DEMO_MODE ? 'BrightPath Learning' : 'Community partner'}</strong><small>{DEMO_MODE ? '18 books needed nearby' : 'Needs and offers connect here'}</small></div><IconCheck size={17} /></div><div className="pitch-visual-tag"><IconSparkles size={15} /> {DEMO_MODE && index === 2 ? 'A 95% explainable fit' : 'Local needs, made visible'}</div></div></div></div></div>
+  return <div className="pitch-backdrop"><div className={`pitch-sheet pitch-${slide.color}`} role="dialog" aria-modal="true" aria-label="Commons two-member pitch mode"><header className="pitch-header"><a className="brand pitch-brand" href="#pitch" onClick={(event) => event.preventDefault()}><span className="brand-mark"><IconArrowsExchange size={21} /></span><span className="brand-word">commons<span className="brand-period">.</span><small>resource exchange</small></span></a><div className="pitch-header-right"><span>TWO-PERSON SHOWCASE</span><button className="icon-button" aria-label="Exit pitch mode" onClick={onClose}><IconX size={21} /></button></div></header><div className="pitch-content"><div className="pitch-copy"><span className="pitch-eyebrow"><i />{slide.eyebrow} <span>·</span> 0{index + 1}</span><h1>{slide.title}</h1><p>{slide.body}</p><div className="pitch-stat"><span className="pitch-stat-icon"><IconLeaf size={20} /></span>{slide.stat}</div><div className="pitch-cue"><span>MEMBER 1 / MEMBER 2 TALK TRACK</span><p>{slide.cue}</p></div><div className="pitch-navigation"><button className="pitch-back" onClick={() => index === 0 ? onClose() : onChange(index - 1)}>{index === 0 ? 'Exit pitch' : <><IconChevronLeft size={17} />Back</>}</button><div className="pitch-dots">{pitchSlides.map((item, dot) => <button key={item.eyebrow} className={dot === index ? 'pitch-dot pitch-dot-active' : 'pitch-dot'} aria-label={`Go to slide ${dot + 1}`} onClick={() => onChange(dot)} />)}</div>{last ? <button className="button button-primary" onClick={onOpenMatch}>Show live match <IconArrowRight size={17} /></button> : <button className="button button-primary" onClick={() => onChange(index + 1)}>Continue <IconArrowRight size={17} /></button>}</div></div><div className="pitch-visual"><div className="pitch-orbit orbit-one" /><div className="pitch-orbit orbit-two" /><div className="pitch-visual-center"><span><IconArrowsExchange size={39} stroke={1.5} /></span><small>CAMPUS SURPLUS</small><i /><small>COMMUNITY NEED</small></div><div className="pitch-floating pitch-floating-top"><IconBook2 size={18} />{DEMO_MODE ? '24 textbooks' : 'Useful surplus'}<span>{DEMO_MODE ? 'READY TO SHARE' : 'READY TO LIST'}</span></div><div className="pitch-floating pitch-floating-bottom"><span className="org-avatar sage">{DEMO_MODE ? 'WU' : 'NG'}</span><div><strong>{DEMO_MODE ? 'Westview University' : 'Community partner'}</strong><small>{DEMO_MODE ? '12 books requested · 3.6 km sample' : 'Needs and offers connect here'}</small></div><IconCheck size={17} /></div><div className="pitch-visual-tag"><IconSparkles size={15} /> {DEMO_MODE && index === 3 ? 'Explainable rule based fit' : 'Local needs, made visible'}</div></div></div></div></div>
 }
 
 export default App

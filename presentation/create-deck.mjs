@@ -77,8 +77,10 @@ function makeCover() {
   text(slide, 'Commons', 0.77, 1.52, 6.9, 0.93, { head: true, fontSize: 54, bold: true, charSpacing: -1.8 })
   text(slide, 'Useful things,\nin the right place.', 0.79, 2.58, 7.0, 1.68, { head: true, fontSize: 39, bold: true, breakLine: false, valign: 'top', charSpacing: -1.1, lineSpacingMultiple: 0.91 })
   text(slide, 'A campus-to-community connector for books, food, devices and more.', 0.82, 4.5, 6.6, 0.74, { fontSize: 17, color: C.body, valign: 'top', breakLine: false })
-  rounded(slide, 0.82, 5.68, 2.75, 0.5, C.pale)
-  text(slide, 'SDG 12  ·  RESPONSIBLE USE', 1.02, 5.81, 2.38, 0.2, { fontSize: 9, bold: true, color: C.forest, charSpacing: 1.1 })
+  text(slide, 'Bhoomik Sevta  ·  Chitransh Dhakar', 0.83, 5.28, 5.7, 0.24, { fontSize: 12, bold: true, color: C.forest })
+  text(slide, 'B.Tech · 5th semester', 0.83, 5.57, 4.2, 0.2, { fontSize: 10, color: C.body })
+  rounded(slide, 0.82, 6.0, 2.75, 0.5, C.pale)
+  text(slide, 'SDG 12  ·  RESPONSIBLE USE', 1.02, 6.13, 2.38, 0.2, { fontSize: 9, bold: true, color: C.forest, charSpacing: 1.1 })
   text(slide, 'Hackathon prototype  ·  17 November 2026', 0.83, 6.85, 5.5, 0.2, { fontSize: 9, color: C.muted })
   text(slide, 'SHARE WHAT IS USEFUL', 8.93, 0.76, 3.8, 0.25, { fontSize: 9, bold: true, color: 'C7D8BE', charSpacing: 1.7, align: 'center' })
   slide.addShape(pptx.ShapeType.ellipse, { x: 9.42, y: 1.54, w: 2.48, h: 2.48, fill: { color: '345F43' }, line: { color: '739168', transparency: 40, width: 1.2 } })
@@ -150,7 +152,7 @@ function makeSolution() {
 function makeDemo() {
   const slide = pptx.addSlide('LIGHT')
   eyebrow(slide, '03  /  live prototype')
-  heading(slide, 'One match. One simple next step.', 'A sample campus book listing connects to a nearby learning centre request.')
+  heading(slide, 'One match. One simple next step.', 'Northbridge University’s surplus listing connects with Westview University’s request.')
 
   rounded(slide, 0.77, 2.5, 5.14, 3.47, C.white, C.line)
   rounded(slide, 1.09, 2.83, 0.5, 0.5, C.pale)
@@ -163,16 +165,16 @@ function makeDemo() {
   rounded(slide, 7.42, 2.5, 5.14, 3.47, C.white, C.line)
   rounded(slide, 7.74, 2.83, 0.5, 0.5, C.peach)
   text(slide, 'COMMUNITY REQUEST', 8.44, 2.97, 3.7, 0.18, { fontSize: 9, bold: true, color: C.peachInk, charSpacing: 1.2 })
-  text(slide, 'Textbooks for\nsecondary students', 7.75, 3.72, 4.3, 0.83, { head: true, fontSize: 24, bold: true, valign: 'top' })
-  text(slide, '18', 7.73, 4.91, 1.1, 0.59, { head: true, fontSize: 38, bold: true, color: C.peachInk })
-  text(slide, 'needed  ·  grades 9–12', 8.83, 5.12, 3.0, 0.2, { fontSize: 10, color: C.body })
-  text(slide, 'BrightPath Learning Centre · 2.4 km', 7.75, 5.57, 3.8, 0.2, { fontSize: 9, color: C.muted })
+  text(slide, 'Biology textbooks for\nfirst-year students', 7.75, 3.72, 4.3, 0.83, { head: true, fontSize: 22, bold: true, valign: 'top' })
+  text(slide, '12', 7.73, 4.91, 1.1, 0.59, { head: true, fontSize: 38, bold: true, color: C.peachInk })
+  text(slide, 'needed  ·  incoming cohort', 8.83, 5.12, 3.0, 0.2, { fontSize: 10, color: C.body })
+  text(slide, 'Westview University · 3.6 km', 7.75, 5.57, 3.8, 0.2, { fontSize: 9, color: C.muted })
 
   slide.addShape(pptx.ShapeType.ellipse, { x: 6.11, y: 3.79, w: 1.1, h: 1.1, fill: { color: C.forest }, line: { color: C.forest } })
-  text(slide, '95%', 6.11, 4.12, 1.1, 0.3, { fontSize: 15, bold: true, color: C.lime, align: 'center' })
+  text(slide, 'GOOD', 6.11, 4.12, 1.1, 0.3, { fontSize: 12, bold: true, color: C.lime, align: 'center' })
   text(slide, 'FIT', 6.11, 4.47, 1.1, 0.16, { fontSize: 7, bold: true, color: C.white, align: 'center', charSpacing: 1.2 })
   rounded(slide, 2.08, 6.23, 9.17, 0.46, C.pale)
-  text(slide, 'CATEGORY MATCH  ·  COVERS ALL 18 REQUESTED  ·  2.4 KM AWAY', 2.37, 6.36, 8.6, 0.17, { fontSize: 9, bold: true, color: C.forest, align: 'center', charSpacing: 0.5 })
+  text(slide, 'CATEGORY MATCH  ·  COVERS ALL 12 REQUESTED  ·  3.6 KM AWAY', 2.37, 6.36, 8.6, 0.17, { fontSize: 9, bold: true, color: C.forest, align: 'center', charSpacing: 0.5 })
   text(slide, 'Fictional demo organisations and distance. Fit score comes from prototype rules.', 0.76, 6.81, 9.6, 0.14, { fontSize: 8, color: C.muted })
   return slide
 }
@@ -201,13 +203,14 @@ function makeTrust() {
   eyebrow(slide, 'STATUS WITH A HUMAN IN THE LOOP', 7.34, 2.84, 'C8D8BE')
   const statuses = [
     ['AVAILABLE', 'Campus item listed'],
-    ['REQUESTED', 'Donor offers the item'],
-    ['FULFILLED', 'Coordinator confirms handoff'],
+    ['REQUESTED', 'Donor sends an offer'],
+    ['ACCEPTED', 'Recipient campus agrees'],
+    ['FULFILLED', 'Coordinators confirm handoff'],
   ]
   statuses.forEach(([status, note], index) => {
-    const y = 3.47 + index * 0.82
+    const y = 3.34 + index * 0.68
     slide.addShape(pptx.ShapeType.ellipse, { x: 7.36, y, w: 0.31, h: 0.31, fill: { color: index === 2 ? C.lime : '456F4D' }, line: { color: index === 2 ? C.lime : '8EAB7A', width: 1 } })
-    if (index < 2) shape(slide, pptx.ShapeType.line, 7.515, y + 0.31, 0, 0.51, '7D9970', { line: { color: '8DA67E', width: 1.3 } })
+    if (index < 3) shape(slide, pptx.ShapeType.line, 7.515, y + 0.31, 0, 0.37, '7D9970', { line: { color: '8DA67E', width: 1.3 } })
     text(slide, status, 7.91, y + 0.02, 1.18, 0.17, { fontSize: 8, bold: true, color: index === 2 ? C.lime : 'DAE6D2', charSpacing: 1.2 })
     text(slide, note, 9.13, y + 0.02, 2.75, 0.18, { fontSize: 9, color: 'D1DDCF' })
   })
@@ -248,12 +251,40 @@ function makePilot() {
   return slide
 }
 
+function makeBusinessModel() {
+  const slide = pptx.addSlide('LIGHT')
+  eyebrow(slide, '06  /  sustainability')
+  heading(slide, 'A practical path to keep Commons running.', 'Keep community access accessible, with revenue tied to optional paid activity.')
+
+  const models = [
+    { x: 0.82, label: 'CORE EXCHANGE', title: 'Free community matching', body: 'Connect usable campus surplus with verified community needs. Start with a campus cluster and partner onboarding.', fill: C.pale, ink: C.forest },
+    { x: 4.94, label: 'TRANSACTION REVENUE', title: 'Small service fee', body: 'If a paid or non-NGO transaction is appropriate, Commons may earn a modest brokerage or affiliate fee.', fill: C.peach, ink: C.peachInk },
+    { x: 9.06, label: 'OPTIONAL SUPPORT', title: 'Relevant sponsorships', body: 'Consider clearly labelled, non-intrusive third-party promotions that do not obstruct community exchange.', fill: C.sky, ink: C.skyInk },
+  ]
+  models.forEach(({ x, label, title, body, fill, ink }) => {
+    rounded(slide, x, 2.63, 3.45, 2.73, C.white, C.line)
+    rounded(slide, x + 0.25, 2.91, 2.95, 0.4, fill)
+    text(slide, label, x + 0.38, 3.03, 2.68, 0.16, { fontSize: 8, bold: true, color: ink, charSpacing: 1.0, align: 'center' })
+    text(slide, title, x + 0.27, 3.63, 2.9, 0.55, { head: true, fontSize: 19, bold: true, align: 'center', valign: 'mid' })
+    text(slide, body, x + 0.35, 4.34, 2.75, 0.75, { fontSize: 10, color: C.body, align: 'center', valign: 'top', breakLine: false })
+  })
+  rounded(slide, 1.2, 5.9, 10.93, 0.7, C.darkForest)
+  text(slide, 'Validate willingness to pay and partner trust during the pilot before scaling revenue.', 1.52, 6.15, 10.3, 0.22, { fontSize: 12, bold: true, color: C.white, align: 'center' })
+  text(slide, 'Proposed model · subject to pilot learning and partner feedback', 0.8, 6.82, 8, 0.14, { fontSize: 8, color: C.muted })
+  return slide
+}
+
 await mkdir(dirname(OUTPUT), { recursive: true })
-makeCover()
-makeGap()
-makeSolution()
-makeDemo()
-makeTrust()
-makePilot()
+const slides = [makeCover(), makeGap(), makeSolution(), makeDemo(), makeTrust(), makePilot(), makeBusinessModel()]
+const speakerNotes = [
+  'MEMBER 1 · 15 seconds\nHello, judges and everyone present. I am Bhoomik Sevta.\n\nMEMBER 2 · 10 seconds\nAnd I am Chitransh Dhakar. We are B.Tech fifth-semester students, and today we are here to present Commons.',
+  'MEMBER 1 · 15 seconds\nChitransh, have you ever had things you no longer need taking up space: books, notebooks, stationery, clothes or old gadgets?\n\nMEMBER 2 · 10 seconds\nYes. Sometimes useful things get thrown away or sold as scrap.\n\nMEMBER 1 · 10 seconds\nAnd nearby NGOs and community groups may be looking for those very resources.\n\nMEMBER 2 · 10 seconds\nExactly. The problem is the gap between surplus and need.',
+  'MEMBER 1 · 15 seconds\nThat is the gap Commons aims to fill: a dedicated platform where campus surplus and community needs can be listed together.\n\nMEMBER 2 · 20 seconds\nA campus member lists an item. Commons ranks possible matches using category, quantity, condition and known distance. The donor reviews and offers it; the recipient responds, and a coordinator can track the handoff. It is a simple, explainable matching algorithm, not an automated decision.',
+  'MEMBER 1 · 20 seconds\nImagine Northbridge University has 24 biology textbooks in good condition. Westview University needs 12. The sample distance is 3.6 kilometres. Commons surfaces the fit because the category matches and the available quantity covers the request. I will offer these books now.\n\nMEMBER 2 · 20 seconds\nI will switch to Westview’s recipient account. The incoming offer appears here, and I can accept it. The status changes to Accepted; after pickup, Northbridge can mark the handoff fulfilled.',
+  'MEMBER 2 · 20 seconds\nHere is how suggestions work: first, compare the requested category with the listed item. Then consider quantity, condition and distance when the location is known. The rules rank a possible fit and explain why it appeared. A person decides whether to make or accept the offer. This prototype uses fictional data; NGO verification is not connected yet.',
+  'MEMBER 1 · 20 seconds\nWe would begin with our campus and three local partners. We would help them onboard, coordinate early exchanges and learn where the process needs improvement.\n\nMEMBER 2 · 15 seconds\nWe would track listings, suggested matches, accepted offers and completed handoffs, then review the results after the first financial year before deciding what to change or expand.',
+  'MEMBER 1 · 15 seconds\nOur proposed model is a brokerage or affiliate approach: a small fee may apply to suitable paid or non-NGO transactions.\n\nMEMBER 2 · 15 seconds\nWe could also consider relevant, clearly labelled, non-intrusive third-party promotions. We would test these ideas with partners and protect the community exchange from becoming difficult to use.\n\nCLOSING · BOTH\nCommons is about making useful resources visible, connecting them with people who need them, and making each handoff easier to coordinate. Let’s help good things find their next home. Thank you.',
+]
+slides.forEach((slide, index) => slide.addNotes(speakerNotes[index]))
 await pptx.writeFile({ fileName: OUTPUT })
 console.log(`Created ${OUTPUT}`)

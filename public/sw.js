@@ -1,7 +1,8 @@
-const CACHE_NAME = 'commons-shell-v1'
+const CACHE_NAME = 'commons-shell-v2'
+const APP_SHELL = new URL('./', self.location.href).pathname
 
 self.addEventListener('install', (event) => {
-  event.waitUntil(caches.open(CACHE_NAME).then((cache) => cache.addAll(['/'])))
+  event.waitUntil(caches.open(CACHE_NAME).then((cache) => cache.add(APP_SHELL)))
   self.skipWaiting()
 })
 
@@ -15,9 +16,9 @@ self.addEventListener('fetch', (event) => {
   if (event.request.mode === 'navigate') {
     event.respondWith(fetch(event.request).then((response) => {
       const copy = response.clone()
-      caches.open(CACHE_NAME).then((cache) => cache.put('/', copy))
+      if (response.ok) caches.open(CACHE_NAME).then((cache) => cache.put(event.request, copy))
       return response
-    }).catch(() => caches.match('/')))
+    }).catch(() => caches.match(event.request).then((cached) => cached || caches.match(APP_SHELL))))
     return
   }
   if (!['script', 'style', 'image', 'font'].includes(event.request.destination)) return

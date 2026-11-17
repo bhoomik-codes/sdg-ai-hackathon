@@ -1,15 +1,15 @@
 {
-  "id": "/",
+  "id": "./",
   "name": "Commons — Resource exchange",
   "short_name": "Commons",
   "description": "Connect campus surplus with nearby community needs.",
-  "start_url": "/",
-  "scope": "/",
+  "start_url": "./",
+  "scope": "./",
   "display": "standalone",
   "background_color": "#f5f7f3",
   "theme_color": "#2e6945",
   "icons": [
-    { "src": "/commons-192.svg", "sizes": "192x192", "type": "image/svg+xml", "purpose": "any maskable" },
-    { "src": "/commons-512.svg", "sizes": "512x512", "type": "image/svg+xml", "purpose": "any maskable" }
+    { "src": "./commons-192.svg", "sizes": "192x192", "type": "image/svg+xml", "purpose": "any maskable" },
+    { "src": "./commons-512.svg", "sizes": "512x512", "type": "image/svg+xml", "purpose": "any maskable" }
   ]
 }

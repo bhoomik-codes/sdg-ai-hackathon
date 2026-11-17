@@ -8,6 +8,7 @@ import { fileURLToPath } from 'node:url'
 const projectRoot = dirname(fileURLToPath(import.meta.url))
 
 export default defineConfig(({ mode }) => ({
+  base: process.env.GITHUB_PAGES === 'true' ? '/sdg-ai-hackathon/' : '/',
   resolve: {
     alias: {
       '@demo-data': resolve(projectRoot, mode === 'demo' ? 'src/demoData.js' : 'src/emptyData.js'),

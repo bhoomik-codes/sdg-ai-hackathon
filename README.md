@@ -11,12 +11,17 @@ A responsive, installable web prototype that helps a campus connect usable surpl
 
 The demo opens with sample campus listings and fictional community partners. Try:
 
-1. Open the textbook match for BrightPath Learning Centre.
-2. Offer the 24 books against its request for 18.
-3. Open **Surplus listings** and mark the handoff fulfilled.
-4. Use **Reset demo** before presenting again.
+1. On Northbridge University, open **Match board** and offer the 24 biology textbooks to Westview University Learning Commons.
+2. Open the workspace switcher and choose **Westview University · Recipient campus**. This demo login has no password.
+3. Open **Incoming offers** and accept the offer.
+4. Switch back to Northbridge University, open **Surplus listings**, and mark the accepted handoff fulfilled.
+5. Use **Reset demo** before presenting again.
 
 Demo changes are kept in this browser only. **Reset demo** restores the sample data.
+
+## Open the live judge demo
+
+After the GitHub Pages deployment completes, open [Commons on GitHub Pages](https://bhoomik-codes.github.io/sdg-ai-hackathon/). It publishes the demo build with sample listings, community needs, and the Northbridge/Westview campus switcher so judges can try the full flow on a phone or laptop. On supported phones, use the browser menu to add Commons to the home screen. Demo activity stays in that browser and is not shared with other visitors.
 
 ## Build and run
 
@@ -40,6 +45,7 @@ npm run deck
 - Ranks suggestions using transparent rules: category match, available quantity, item condition and known distance.
 - Connects an offer to a request and tracks requested and fulfilled states.
 - Provides a presenter mode with a short talk track and links into the live match board.
+- Includes a second-campus demo login so one university can send surplus and another can accept it.
 - Includes an installable web manifest and a small offline shell cache for the production build.
 
 ## Prototype boundaries
@@ -59,3 +65,7 @@ npm run deck
 - PptxGenJS for the judge pitch deck
 
 All matching, registration status and impact counts shown in this prototype are illustrative. No real impact has been measured yet.
+
+## Two-member pitch
+
+The seven-slide deck includes speaker notes for Bhoomik Sevta and Chitransh Dhakar, with an opening, conversational problem setup, live match, first-year campus-cluster pilot, proposed brokerage/affiliate revenue model and shared closing. The printable run-of-show is in [`presentation/Two-Presenter-Script.md`](presentation/Two-Presenter-Script.md). In-app Pitch mode follows the same story and ends by opening the live Match board.
