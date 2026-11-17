@@ -17,7 +17,18 @@ The demo opens with sample campus listings and fictional community partners. Try
 4. Switch back to Northbridge University, open **Surplus listings**, and mark the accepted handoff fulfilled.
 5. Use **Reset demo** before presenting again.
 
-Demo changes are kept in this browser only. **Reset demo** restores the sample data.
+Without shared sync configured, demo changes stay in this browser. **Reset demo** restores the sample data; with Supabase enabled, it resets the shared demo for all visitors.
+
+## Enable cross-device demo sync
+
+The live handoff appears on another phone only when the shared Supabase demo backend is configured. Without these steps, each browser keeps its own local copy.
+
+1. In Supabase, open **SQL Editor** and run [`supabase/schema.sql`](supabase/schema.sql). It creates the shared demo table, public demo-only access policies, and the Realtime publication entry.
+2. Copy `.env.example` to `.env.local` and set `VITE_SUPABASE_URL` and `VITE_SUPABASE_PUBLISHABLE_KEY`. If the project only has a legacy key, use `VITE_SUPABASE_ANON_KEY` instead.
+3. For GitHub Pages, add repository **Variables** named `VITE_SUPABASE_URL` and `VITE_SUPABASE_PUBLISHABLE_KEY` (or `VITE_SUPABASE_ANON_KEY`) under **Settings → Secrets and variables → Actions**. Then run the **Deploy to GitHub Pages** workflow again.
+4. Open Commons on both devices, switch one to Northbridge and the other to Westview, then send and accept an offer. The header status dot indicates whether the shared connection is active.
+
+The publishable/anon key is intended for browser use. The schema exposes only fictional judge-demo records and allows any visitor to update or reset them, so this setup is for the public prototype—not production data. Never use a database password or `service_role`/secret key in the site.
 
 ## Open the live judge demo
 

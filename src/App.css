@@ -75,6 +75,8 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
 .topbar-actions { gap: 17px; }
 .demo-indicator { display: flex; align-items: center; gap: 6px; color: #7c867e; font-size: 10px; }
 .status-dot { width: 7px; height: 7px; border-radius: 50%; background: #8db963; box-shadow: 0 0 0 3px #8db96322; }
+.demo-indicator-error .status-dot { background: #bc6e55; box-shadow: 0 0 0 3px #bc6e5522; }
+.demo-indicator-connecting .status-dot, .demo-indicator-resetting .status-dot { background: #c29a50; box-shadow: 0 0 0 3px #c29a5022; }
 .pitch-button { display: inline-flex; align-items: center; gap: 7px; padding: 8px 12px; border: 1px solid #e0e9d7; border-radius: 8px; color: #496d3c; background: #f3f7e9; font-size: 11px; font-weight: 700; cursor: pointer; }
 .pitch-button:hover { background: #e8f0dc; }
 .install-button { min-height: 34px; padding: 0 11px; border: 1px solid #d4e2c8; border-radius: 8px; color: #4e753e; background: white; font-size: 10px; font-weight: 700; cursor: pointer; }
@@ -379,7 +381,8 @@ h1, h2, h3, p { margin-top: 0; }
   .breadcrumb { min-width: 0; gap: 4px; font-size: 10px; }
   .breadcrumb span { max-width: 82px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .topbar-actions { flex: 0 0 auto; gap: 3px; }
-  .demo-indicator { display: none; }
+  .demo-indicator { width: 14px; display: flex; justify-content: center; font-size: 0; }
+  .sync-label { display: none; }
   .pitch-button { min-height: 44px; padding: 0 9px; font-size: 11px; }
   .notification-button { width: 44px; height: 44px; }
   .reset-link { display: none; }

@@ -29,6 +29,15 @@ import {
   IconX,
 } from '@tabler/icons-react'
 import { seedListings, seedRequests } from '@demo-data'
+import {
+  readSharedRecords,
+  resetSharedRecords,
+  saveSharedChanges,
+  seedSharedRecords,
+  sharedDemoEnabled,
+  sharedDemoMisconfigured,
+  subscribeToSharedRecords,
+} from './sharedDemo.js'
 
 const DEMO_MODE = import.meta.env.MODE === 'demo'
 
@@ -109,6 +118,12 @@ function App() {
   const [verificationId, setVerificationId] = useState('')
   const [verificationRequested, setVerificationRequested] = useState(false)
   const [installPrompt, setInstallPrompt] = useState(null)
+  const [syncStatus, setSyncStatus] = useState(sharedDemoEnabled ? 'connecting' : sharedDemoMisconfigured ? 'error' : 'local')
+
+  function applySharedRecords(records) {
+    setListings(records.filter((record) => record.kind === 'listing').map((record) => record.data))
+    setRequests(records.filter((record) => record.kind === 'request').map((record) => record.data))
+  }
 
   useEffect(() => {
     function captureInstall(event) {
@@ -118,6 +133,60 @@ function App() {
     window.addEventListener('beforeinstallprompt', captureInstall)
     if ('serviceWorker' in navigator && import.meta.env.PROD) navigator.serviceWorker.register(`${import.meta.env.BASE_URL}sw.js`).catch(() => {})
     return () => window.removeEventListener('beforeinstallprompt', captureInstall)
+  }, [])
+
+  useEffect(() => {
+    if (!sharedDemoEnabled) return undefined
+    let active = true
+    let channel
+    let refreshTimer
+
+    const refresh = async () => {
+      try {
+        const records = await readSharedRecords()
+        if (active) {
+          applySharedRecords(records)
+          if (channel) setSyncStatus('connected')
+        }
+      } catch {
+        if (active) setSyncStatus('error')
+      }
+    }
+
+    const scheduleRefresh = () => {
+      window.clearTimeout(refreshTimer)
+      refreshTimer = window.setTimeout(() => { void refresh() }, 120)
+    }
+
+    const initialize = async () => {
+      try {
+        let records = await readSharedRecords()
+        if (!records.length) {
+          await seedSharedRecords(seedListings, seedRequests)
+          records = await readSharedRecords()
+        }
+        if (!active) return
+        applySharedRecords(records)
+        channel = subscribeToSharedRecords(scheduleRefresh, (status) => {
+          if (!active) return
+          if (status === 'SUBSCRIBED') {
+            setSyncStatus('connected')
+            scheduleRefresh()
+          } else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
+            setSyncStatus('error')
+          }
+        })
+      } catch {
+        if (active) setSyncStatus('error')
+      }
+    }
+
+    void initialize()
+    return () => {
+      active = false
+      window.clearTimeout(refreshTimer)
+      if (channel) void channel.unsubscribe()
+    }
   }, [])
 
   useEffect(() => {
@@ -146,60 +215,120 @@ function App() {
     window.setTimeout(() => setToast(''), 3000)
   }
 
-  function saveLists(nextListings, nextRequests) {
-    setListings(nextListings)
-    setRequests(nextRequests)
-    if (isDemo) {
+  async function saveLists(nextListings, nextRequests) {
+    if (sharedDemoEnabled) {
+      if (syncStatus !== 'connected') throw new Error('Shared demo is not connected')
+      await saveSharedChanges(listings, nextListings, requests, nextRequests)
+      const records = await readSharedRecords()
+      applySharedRecords(records)
+    } else {
+      setListings(nextListings)
+      setRequests(nextRequests)
+    }
+    if (isDemo && !sharedDemoEnabled) {
       localStorage.setItem('commons-demo-listings-v2', JSON.stringify(nextListings))
       localStorage.setItem('commons-demo-requests-v2', JSON.stringify(nextRequests))
     }
   }
 
-  function resetDemo() {
-    saveLists(seedListings, seedRequests)
+  async function resetDemo() {
+    if (sharedDemoEnabled) {
+      if (syncStatus !== 'connected') {
+        notify('The shared demo is reconnecting. Try again in a moment.')
+        return
+      }
+      setSyncStatus('resetting')
+      try {
+        const records = await resetSharedRecords(seedListings, seedRequests)
+        applySharedRecords(records)
+        setSyncStatus('connected')
+      } catch {
+        setSyncStatus('error')
+        notify('Could not reset the shared demo. Check the connection and try again.')
+        return
+      }
+    } else {
+      setListings(seedListings)
+      setRequests(seedRequests)
+      if (isDemo) {
+        localStorage.setItem('commons-demo-listings-v2', JSON.stringify(seedListings))
+        localStorage.setItem('commons-demo-requests-v2', JSON.stringify(seedRequests))
+      }
+    }
     setActiveCampus('Northbridge University')
     setRole('Campus partner')
     setPage('overview')
     setSearch('')
     setFilter('All')
-    notify('Demo reset to the sample campus data')
+    notify(sharedDemoEnabled ? 'Shared demo reset for all visitors' : 'Demo reset to the sample campus data')
   }
 
-  function offerMatch(listingId, requestId) {
+  async function offerMatch(listingId, requestId) {
     const request = requests.find((item) => item.id === requestId)
     const nextListings = listings.map((item) => item.id === listingId ? { ...item, status: 'Requested', offeredRequestId: requestId, recipientCampus: request?.recipientCampus ?? null } : item)
     const nextRequests = requests.map((item) => item.id === requestId ? { ...item, status: 'Matched', offeredListingId: listingId } : item)
-    saveLists(nextListings, nextRequests)
-    setModal(null)
-    notify('Offer sent — the match is now being coordinated')
+    try {
+      await saveLists(nextListings, nextRequests)
+      setModal(null)
+      notify('Offer sent — the match is now being coordinated')
+    } catch {
+      setSyncStatus(sharedDemoEnabled ? 'error' : 'local')
+      notify('Could not sync the offer. Check the connection and try again.')
+    }
   }
 
-  function acceptOffer(listingId, requestId) {
+  async function acceptOffer(listingId, requestId) {
     const nextListings = listings.map((item) => item.id === listingId ? { ...item, status: 'Accepted' } : item)
     const nextRequests = requests.map((item) => item.id === requestId ? { ...item, status: 'Accepted' } : item)
-    saveLists(nextListings, nextRequests)
-    notify('Offer accepted — the two campus coordinators can arrange the handoff')
+    try {
+      await saveLists(nextListings, nextRequests)
+      notify('Offer accepted — both campuses can see the update')
+    } catch {
+      setSyncStatus(sharedDemoEnabled ? 'error' : 'local')
+      notify('Could not sync the acceptance. Check the connection and try again.')
+    }
   }
 
-  function fulfillListing(listingId) {
+  async function fulfillListing(listingId) {
     const listing = listings.find((item) => item.id === listingId)
     if (listing?.status !== 'Accepted' || listing.campus !== activeCampus) return
     const nextListings = listings.map((item) => item.id === listingId ? { ...item, status: 'Fulfilled' } : item)
     const nextRequests = requests.map((item) => item.id === listing?.offeredRequestId ? { ...item, status: 'Fulfilled' } : item)
-    saveLists(nextListings, nextRequests)
-    notify('Handoff marked fulfilled — thanks for keeping it in use')
+    try {
+      await saveLists(nextListings, nextRequests)
+      notify('Handoff marked fulfilled — thanks for keeping it in use')
+    } catch {
+      setSyncStatus(sharedDemoEnabled ? 'error' : 'local')
+      notify('Could not sync the handoff. Check the connection and try again.')
+    }
   }
 
-  function submitForm(event) {
+  async function submitForm(event) {
     event.preventDefault()
+    if (sharedDemoEnabled && syncStatus !== 'connected') {
+      notify('The shared demo is reconnecting. Try again in a moment.')
+      return
+    }
     if (modal === 'listing') {
-      const listing = { id: `l-${Date.now()}`, name: form.name.trim(), category: form.category, quantity: Number(form.quantity), condition: form.condition, location: form.location.trim() || 'Campus pickup · confirm in chat', campus: activeCampus, status: 'Available', note: form.note.trim() || 'Ready for a new home', icon: 'package' }
-      saveLists([listing, ...listings], requests)
+      const listing = { id: `l-${crypto.randomUUID()}`, name: form.name.trim(), category: form.category, quantity: Number(form.quantity), condition: form.condition, location: form.location.trim() || 'Campus pickup · confirm in chat', campus: activeCampus, status: 'Available', note: form.note.trim() || 'Ready for a new home', icon: 'package' }
+      try {
+        await saveLists([listing, ...listings], requests)
+      } catch {
+        setSyncStatus(sharedDemoEnabled ? 'error' : 'local')
+        notify('Could not sync the listing. Check the connection and try again.')
+        return
+      }
       setPage('listings')
       notify('Surplus listing added — checking for a community match')
     } else if (modal === 'request') {
-      const request = { id: `r-${Date.now()}`, organization: form.organization.trim(), item: form.name.trim(), category: form.category, quantity: Number(form.quantity), location: form.location.trim() || 'Nearby · distance to confirm', distanceKm: null, urgency: form.urgency, status: 'Open', initials: form.organization.trim().split(' ').slice(0, 2).map((word) => word[0]).join('').toUpperCase() || 'NG', color: 'sage', note: form.note.trim() || 'Request added by a community partner', recipientCampus: activeCampus }
-      saveLists(listings, [request, ...requests])
+      const request = { id: `r-${crypto.randomUUID()}`, organization: form.organization.trim(), item: form.name.trim(), category: form.category, quantity: Number(form.quantity), location: form.location.trim() || 'Nearby · distance to confirm', distanceKm: null, urgency: form.urgency, status: 'Open', initials: form.organization.trim().split(' ').slice(0, 2).map((word) => word[0]).join('').toUpperCase() || 'NG', color: 'sage', note: form.note.trim() || 'Request added by a community partner', recipientCampus: activeCampus }
+      try {
+        await saveLists(listings, [request, ...requests])
+      } catch {
+        setSyncStatus(sharedDemoEnabled ? 'error' : 'local')
+        notify('Could not sync the request. Check the connection and try again.')
+        return
+      }
       setPage('requests')
       notify('Community need added — matching against available resources')
     }
@@ -231,6 +360,12 @@ function App() {
   })
 
   const title = navItems.find((item) => item.key === page)?.label ?? 'Overview'
+  const syncLabel = !isDemo ? 'Production build'
+    : syncStatus === 'connected' ? 'Live sync active'
+      : syncStatus === 'connecting' ? 'Connecting to shared demo'
+        : syncStatus === 'resetting' ? 'Resetting shared demo'
+          : syncStatus === 'error' ? 'Shared sync unavailable'
+            : 'Saved on this device'
 
   return (
     <div className="app-shell">
@@ -273,7 +408,7 @@ function App() {
             <span><strong>Small actions, shared impact</strong><small>{isDemo ? 'Sample exchange data' : 'Your community exchange'}</small></span>
             <IconArrowDownRight size={16} className="impact-arrow" />
           </div>
-          {isDemo && <button className="nav-item reset-demo-mobile" onClick={resetDemo}><IconRefresh size={19} stroke={1.7} /><span>Reset demo data</span></button>}
+          {isDemo && <button className="nav-item reset-demo-mobile" title={sharedDemoEnabled ? 'Reset the shared demo for every visitor' : 'Reset sample data on this device'} onClick={resetDemo}><IconRefresh size={19} stroke={1.7} /><span>{sharedDemoEnabled ? 'Reset shared demo' : 'Reset demo data'}</span></button>}
           <button className="nav-item"><IconSettings size={19} stroke={1.7} /><span>Settings</span></button>
           <button className="profile-row" onClick={() => setModal({ type: 'register' })}>
             <span className="profile-avatar">AM</span><span className="profile-copy"><strong>Alex Morgan</strong><small>Campus coordinator</small></span><IconChevronDown size={15} />
@@ -290,11 +425,11 @@ function App() {
             <div className="breadcrumb"><span>{activeCampus}</span><IconChevronRight size={14} /><strong>{title}</strong></div>
           </div>
           <div className="topbar-actions">
-            <div className="demo-indicator"><span className="status-dot" />{isDemo ? 'Demo workspace' : 'Production build'}</div>
+            <div className={`demo-indicator demo-indicator-${syncStatus}`} role="status" aria-live="polite" aria-label={syncLabel} title={syncLabel}><span className="status-dot" /><span className="sync-label">{syncLabel}</span></div>
             <button className="pitch-button transition-colors focus-visible:ring-2 focus-visible:ring-commons-forest" onClick={() => setPitchIndex(0)}><IconSparkles size={17} />Pitch mode</button>
             {installPrompt && <button className="install-button" onClick={installApp}>Install</button>}
             <button className="icon-button notification-button" aria-label="Notifications" onClick={() => notify('You’re all caught up')}><IconBell size={19} /><i /></button>
-            {isDemo && <button className="reset-link" onClick={resetDemo}>Reset demo</button>}
+            {isDemo && <button className="reset-link" title={sharedDemoEnabled ? 'This resets demo data for every visitor' : 'Restore sample data on this device'} onClick={resetDemo}>{sharedDemoEnabled ? 'Reset shared demo' : 'Reset demo'}</button>}
           </div>
         </header>
 
@@ -312,7 +447,7 @@ function App() {
               </div>
             </section>
 
-            {isDemo && <div className="demo-note"><IconSparkles size={16} /><span><strong>You’re in the sample workspace.</strong> Try the textbook match, offer the books, then mark the handoff complete.</span><button onClick={() => setPitchIndex(0)}>Open the 60-second tour <IconArrowRight size={15} /></button></div>}
+            {isDemo && <div className="demo-note"><IconSparkles size={16} /><span><strong>You’re in the sample workspace.</strong> {syncStatus === 'connected' ? 'Updates sync across devices. This demo board is public; use sample information only.' : syncStatus === 'connecting' ? 'Connecting to the shared demo…' : syncStatus === 'error' ? 'Shared sync is unavailable. Check the project setup or connection.' : 'Changes are saved on this device only.'}</span><button onClick={() => setPitchIndex(0)}>Open the 60-second tour <IconArrowRight size={15} /></button></div>}
 
             <section className="metrics-grid" aria-label="Community exchange summary">
               <Metric label="Ready to find a home" value={availableCount} suffix="listings" caption="Across books, devices and more" icon={IconPackage} tone="lime" />
